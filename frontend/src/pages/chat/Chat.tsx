@@ -657,15 +657,19 @@ const Chat = () => {
                                     role="button"
                                     styles={{ 
                                         icon: { 
-                                            color: '#FFFFFF',
+                                            color: '#000',
                                         },
                                         root: {
-                                            color: '#FFFFFF',
-                                            background: "radial-gradient(109.81% 107.82% at 100.1% 90.19%, #0F6CBD 33.63%, #2D87C3 70.31%, #8DDDD8 100%)"
+                                            color: '#000',
+                                            background: "#ffff"
                                         },
                                         rootDisabled: {
                                             background: "#BDBDBD"
+                                        },
+                                        iconHovered: {
+                                            color: "#000"
                                         }
+                                        
                                     }}
                                     className={styles.newChatIcon}
                                     iconProps={{ iconName: 'Add' }}
@@ -677,13 +681,16 @@ const Chat = () => {
                                     role="button"
                                     styles={{ 
                                         icon: { 
-                                            color: '#FFFFFF',
+                                            color: '#000',
                                         },
                                         root: {
-                                            color: '#FFFFFF',
-                                            background: disabledButton() ? "#BDBDBD" : "radial-gradient(109.81% 107.82% at 100.1% 90.19%, #0F6CBD 33.63%, #2D87C3 70.31%, #8DDDD8 100%)",
+                                            color: '#000',
+                                            background: disabledButton() ? "#BDBDBD" : "#ffff",
                                             cursor: disabledButton() ? "" : "pointer"
                                         },
+                                        iconHovered: {
+                                            color: "#000"
+                                        }
                                     }}
                                     className={appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured ? styles.clearChatBroom : styles.clearChatBroomNoCosmos}
                                     iconProps={{ iconName: 'Broom' }}
