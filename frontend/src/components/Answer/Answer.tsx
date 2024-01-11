@@ -10,6 +10,8 @@ import { parseAnswer } from "./AnswerParser";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import supersub from 'remark-supersub'
+import { BsFolderSymlink } from "react-icons/bs";
+import { FaRegFilePdf } from "react-icons/fa6";
 
 interface Props {
     answer: AskResponse;
@@ -25,7 +27,7 @@ export const Answer = ({
 
     const parsedAnswer = useMemo(() => parseAnswer(answer), [answer]);
     const [chevronIsExpanded, setChevronIsExpanded] = useState(isRefAccordionOpen);
-
+    console.log(parsedAnswer);
     const handleChevronClick = () => {
         setChevronIsExpanded(!chevronIsExpanded);
         toggleIsRefAccordionOpen();
@@ -35,24 +37,51 @@ export const Answer = ({
         setChevronIsExpanded(isRefAccordionOpen);
     }, [isRefAccordionOpen]);
 
+    const onFolderClicked = (data: Citation) => {
+        const dataUrl = data.url;
+        const fileUrl = dataUrl?.replace(" ", "%20");
+        window.open(fileUrl, '_blank');
+    }
+
+    const openCitationPanel = (citation: Citation, showPdf = false) => {
+        citation.showPdf = showPdf;
+        onCitationClicked(citation)
+    }
+
     const createCitationFilepath = (citation: Citation, index: number, truncate: boolean = false) => {
         let citationFilename = "";
+        let citationFilePath = citation.filepath;
+        if (citationFilePath && citationFilePath.indexOf('OneDrive') >= 0) {
+            const citationFilenameArr = citationFilePath.split('/');
+            citationFilenameArr.splice(0, 1);
+            citationFilePath = '';
+            citationFilenameArr.forEach((path: string, i: number) => {
+                if(i > 0) {
+                    citationFilePath = citationFilePath + '/';
+                }
+                citationFilePath = citationFilePath + path;
+            })
+        }
 
-        if (citation.filepath && citation.chunk_id) {
-            if (truncate && citation.filepath.length > filePathTruncationLimit) {
-                const citationLength = citation.filepath.length;
-                citationFilename = `${citation.filepath.substring(0, 20)}...${citation.filepath.substring(citationLength -20)} - Part ${parseInt(citation.chunk_id) + 1}`;
+        if (citationFilePath && citation.chunk_id) {
+            const citationFilePathArr = citationFilePath.split('.');
+            citation.ext = citationFilePathArr[citationFilePathArr.length - 1];
+            if (truncate && citationFilePath.length > filePathTruncationLimit) {
+                const citationLength = citationFilePath.length;
+                citationFilename = `${citationFilePath.substring(0, 20)}...${citationFilePath.substring(citationLength -20)} - Part ${parseInt(citation.chunk_id) + 1}`;
             }
             else {
-                citationFilename = `${citation.filepath} - Part ${parseInt(citation.chunk_id) + 1}`;
+                citationFilename = `${citationFilePath} - Part ${parseInt(citation.chunk_id) + 1}`;
             }
         }
-        else if (citation.filepath && citation.reindex_id) {
-            citationFilename = `${citation.filepath} - Part ${citation.reindex_id}`;
+        else if (citationFilePath && citation.reindex_id) {
+            citationFilename = `${citationFilePath} - Part ${citation.reindex_id}`;
         }
         else {
             citationFilename = `Citation ${index}`;
         }
+
+        
         return citationFilename;
     }
 
@@ -99,19 +128,27 @@ export const Answer = ({
                     <div style={{ marginTop: 8, display: "flex", flexFlow: "wrap column", maxHeight: "150px", gap: "4px" }}>
                         {parsedAnswer.citations.map((citation, idx) => {
                             return (
-                                <span 
-                                    title={createCitationFilepath(citation, ++idx)} 
-                                    tabIndex={0} 
-                                    role="link" 
-                                    key={idx} 
-                                    onClick={() => onCitationClicked(citation)} 
-                                    onKeyDown={e => e.key === "Enter" || e.key === " " ? onCitationClicked(citation) : null}
-                                    className={styles.citationContainer}
-                                    aria-label={createCitationFilepath(citation, idx)}
-                                >
-                                    <div className={styles.citation}>{idx}</div>
-                                    {createCitationFilepath(citation, idx, true)}
-                                </span>);
+                                <>
+                                    <span 
+                                        title={createCitationFilepath(citation, ++idx)} 
+                                        tabIndex={0} 
+                                        role="link" 
+                                        key={idx} 
+                                        className={styles.citationContainer}
+                                        aria-label={createCitationFilepath(citation, idx)}
+                                    >
+                                        <span className={styles.citationLink} onClick={() => openCitationPanel(citation, false)}>
+                                            <div className={styles.citation}>{idx}</div>
+                                            {createCitationFilepath(citation, idx, true)}
+                                        </span>
+                                        
+                                        {citation.ext === 'pdf' ? (
+                                            <span title="Open PDF" className={styles.fileUrl} onClick={() => openCitationPanel(citation, true)} ><FaRegFilePdf /></span>
+                                        ) : (<></>)}
+                                        <span title="Click to open share point" className={styles.fileUrl} onClick={() => onFolderClicked(citation)} ><BsFolderSymlink /></span>
+                                    </span>
+                                </>
+                                );
                         })}
                     </div>
                 }

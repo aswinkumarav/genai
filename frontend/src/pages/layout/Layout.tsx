@@ -3,10 +3,16 @@ import styles from "./Layout.module.css";
 import logo from "../../assets/logo_light.jpg";
 import { CopyRegular, ShareRegular } from "@fluentui/react-icons";
 import { CommandBarButton, Dialog, Stack, TextField, ICommandBarStyles, IButtonStyles, DefaultButton  } from "@fluentui/react";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useRef } from "react";
 import { HistoryButton, ShareButton } from "../../components/common/Button";
 import { AppStateContext } from "../../state/AppProvider";
-import { CosmosDBStatus } from "../../api";
+import { CosmosDBStatus, getFolderInfo } from "../../api";
+import info from "../../assets/icon/info-square.svg"
+import Overlay from 'react-bootstrap/Overlay';
+import Popover from 'react-bootstrap/Popover';
+import { IoCloseOutline } from "react-icons/io5";
+import { FaRegFolder } from "react-icons/fa6";
+import { CiFileOn } from "react-icons/ci";
 
 const shareButtonStyles: ICommandBarStyles & IButtonStyles = {
     root: {
@@ -38,6 +44,11 @@ const Layout = () => {
     const [copyClicked, setCopyClicked] = useState<boolean>(false);
     const [copyText, setCopyText] = useState<string>("Copy URL");
     const appStateContext = useContext(AppStateContext)
+    const [folderList, setFolderList] = useState<any>('');
+    const [folderKey, setFolderKey] = useState<any>('');
+    const [showFolderList, setShowFolderList] = useState<boolean>(false);
+    const ref = useRef(null);
+    const [target, setTarget] = useState(null);
 
     const handleShareClick = () => {
         setIsSharePanelOpen(true);
@@ -57,6 +68,23 @@ const Layout = () => {
     const handleHistoryClick = () => {
         appStateContext?.dispatch({ type: 'TOGGLE_CHAT_HISTORY' })
     };
+
+    const intFolderInfo = () => {
+        getFolderInfo().then((response: any) => {
+            const keys: any = Object.keys(response);
+            if (!folderList) {
+                setFolderList(response);
+                setFolderKey(keys);
+            }
+        })
+    }
+
+    intFolderInfo();
+
+    const handleClick = (event: any) => {
+        setShowFolderList(!showFolderList);
+        setTarget(event.target);
+      };
 
     useEffect(() => {
         if (copyClicked) {
@@ -83,6 +111,52 @@ const Layout = () => {
                             </Link> */}
                         </Stack>
                         <Stack horizontal tokens={{ childrenGap: 4 }}>
+                            <span ref={ref} style={{margin: '4px 3px'}}>
+                                <span onClick={handleClick} style={{cursor: 'pointer'}}>
+                                    <img
+                                        src={info}
+                                        alt="user"
+                                        id="user-icon"
+                                        height={23}
+                                        width={23}
+                                    />
+                                </span>
+                                    <Overlay placement="bottom" container={ref} rootClose={true} show={showFolderList} target={target}>
+                                        <Popover id="popover-contained" className={styles.popoverContainer}>
+                                            <Popover.Header as="h3" style={{
+                                                borderBottom: '1.5px solid #b4b4b4',
+                                                paddingBottom: '8px',
+                                                marginTop: '10px'
+                                                }}>Folder List
+                                                <span onClick={() => {setShowFolderList(false)}} className={styles.folderListClose}><IoCloseOutline /></span>
+                                                </Popover.Header>
+                                                
+                                            <Popover.Body>
+                                                { folderKey && folderKey.length ? (
+                                                    folderKey.map((key: string) => (
+                                                        <>
+                                                            <div style={{marginTop: '5px'}}>
+                                                                <div style={{display: 'flex', fontWeight: '500'}}>
+                                                                    <span style={{marginTop: '2px'}}><FaRegFolder size={17}/></span>
+                                                                    <span style={{fontSize: '15px', marginLeft: '7px'}}>{key}</span>
+                                                                </div>
+                                                                {folderList[key].map((list: string) => (
+                                                                    <div style={{display: 'flex', marginLeft: '25px'}}>
+                                                                        <span style={{marginTop: '2px'}}><FaRegFolder size={18}/></span>
+                                                                        <span style={{fontSize: '15px', marginLeft: '5px'}}>{list}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </>
+                                                    ))
+                                                    ) : (
+                                                        <>Loading folder list...</>
+                                                    )
+                                                }
+                                            </Popover.Body>
+                                        </Popover>
+                                    </Overlay>
+                            </span>
                                 {(appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) && 
                                     <HistoryButton onClick={handleHistoryClick} text={appStateContext?.state?.isChatHistoryOpen ? "Hide chat history" : "Show chat history"}/>    
                                 }
@@ -134,5 +208,6 @@ const Layout = () => {
         </div>
     );
 };
+
 
 export default Layout;

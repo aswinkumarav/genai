@@ -13,6 +13,8 @@ export type Citation = {
     metadata: string | null;
     chunk_id: string | null;
     reindex_id: string | null;
+    showPdf: boolean | false;
+    ext: string | null;
 }
 
 export type ToolMessageContent = {

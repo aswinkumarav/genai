@@ -10,6 +10,8 @@ import { isEmpty } from "lodash-es";
 
 import styles from "./Chat.module.css";
 import Nucleus from "../../assets/nucleus.png";
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 
 import {
     ChatMessage,
@@ -25,7 +27,8 @@ import {
     historyClear,
     ChatHistoryLoadingState,
     CosmosDBStatus,
-    ErrorMessage
+    ErrorMessage,
+    getBlobUrl
 } from "../../api";
 import { Answer } from "../../components/Answer";
 import { QuestionInput } from "../../components/QuestionInput";
@@ -719,22 +722,36 @@ const Chat = () => {
                     </div>
                     {/* Citation Panel */}
                     {messages && messages.length > 0 && isCitationPanelOpen && activeCitation && ( 
-                    <Stack.Item className={styles.citationPanel} tabIndex={0} role="tabpanel" aria-label="Citations Panel">
-                        <Stack aria-label="Citations Panel Header Container" horizontal className={styles.citationPanelHeaderContainer} horizontalAlign="space-between" verticalAlign="center">
-                            <span aria-label="Citations" className={styles.citationPanelHeader}>Citations</span>
-                            <IconButton iconProps={{ iconName: 'Cancel'}} aria-label="Close citations panel" onClick={() => setIsCitationPanelOpen(false)}/>
-                        </Stack>
-                        <h5 className={styles.citationPanelTitle} tabIndex={0} title={activeCitation.url && !activeCitation.url.includes("blob.core") ? activeCitation.url : activeCitation.title ?? ""} onClick={() => onViewSource(activeCitation)}>{activeCitation.title}</h5>
-                        <div tabIndex={0}> 
-                        <ReactMarkdown 
-                            linkTarget="_blank"
-                            className={styles.citationPanelContent}
-                            children={activeCitation.content} 
-                            remarkPlugins={[remarkGfm]} 
-                            rehypePlugins={[rehypeRaw]}
-                        />
-                        </div>
-                    </Stack.Item>
+                        !activeCitation.showPdf ? (
+                            <Stack.Item className={styles.citationPanel} tabIndex={0} role="tabpanel" aria-label="Citations Panel">
+                                <Stack aria-label="Citations Panel Header Container" horizontal className={styles.citationPanelHeaderContainer} horizontalAlign="space-between" verticalAlign="center">
+                                    <span aria-label="Citations" className={styles.citationPanelHeader}>Citations</span>
+                                    <IconButton iconProps={{ iconName: 'Cancel'}} aria-label="Close citations panel" onClick={() => setIsCitationPanelOpen(false)}/>
+                                </Stack>
+                                <h5 className={styles.citationPanelTitle} tabIndex={0} title={activeCitation.url && !activeCitation.url.includes("blob.core") ? activeCitation.url : activeCitation.title ?? ""} onClick={() => onViewSource(activeCitation)}>{activeCitation.title}</h5>
+                                <div tabIndex={0}> 
+                                <ReactMarkdown 
+                                    linkTarget="_blank"
+                                    className={styles.citationPanelContent}
+                                    children={activeCitation.content} 
+                                    remarkPlugins={[remarkGfm]} 
+                                    rehypePlugins={[rehypeRaw]}
+                                />
+                                </div>
+                            </Stack.Item>
+                            ) : (
+                                <Stack.Item className={styles.citationPanel} tabIndex={0} role="tabpanel" aria-label="Citations Panel">
+                                <Stack aria-label="Citations Panel Header Container" horizontal className={styles.citationPanelHeaderContainer} horizontalAlign="space-between" verticalAlign="center">
+                                    <span aria-label="Citations" className={styles.citationPanelHeader}>Citations</span>
+                                    <IconButton iconProps={{ iconName: 'Cancel'}} aria-label="Close citations panel" onClick={() => setIsCitationPanelOpen(false)}/>
+                                </Stack>
+                                <h5 className={styles.citationPanelTitle} tabIndex={0} title={activeCitation.url && !activeCitation.url.includes("blob.core") ? activeCitation.url : activeCitation.title ?? ""} onClick={() => onViewSource(activeCitation)}>{activeCitation.title}</h5>
+                                <div tabIndex={0}> 
+                                    <PdfViewer filepath={activeCitation.filepath} /> 
+                                </div>
+                            </Stack.Item>
+                            )
+                    
                 )}
                 {(appStateContext?.state.isChatHistoryOpen && appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) && <ChatHistoryPanel/>}
                 </Stack>
@@ -742,5 +759,55 @@ const Chat = () => {
         </div>
     );
 };
+
+const PdfViewer = (prop: any) => {
+    const [ blobUrl, setBlobUrl ] = useState<any>('');
+    useEffect(() => {
+        initBlobUrl();
+    }, [prop.filepath]);
+
+    const initBlobUrl = async () => {
+        await getBlobUrl(prop.filepath).then((response: any) => {
+            setBlobUrl(response.sas_url)
+        })
+    }
+
+    const [numPages, setNumPages] = useState(null);
+ 
+    const onDocumentLoadSuccess = (res: any ) => {
+      setNumPages(res._pdfInfo.numPages);
+    };
+   
+    const renderPages = () => {
+      const pages = [];
+      if (numPages) {
+        for (let pageNumber = 1; pageNumber <= numPages; pageNumber++) {
+            pages.push(<Page key={pageNumber} pageNumber={pageNumber} />);
+        }
+      }
+      return pages;
+    };
+    
+    pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+    return(
+        <>
+            {blobUrl ? (
+                <div>
+                    <Document 
+                        file={{url: blobUrl}}
+                        onLoadError={(error) => console.log(error)}
+                        onLoadSuccess={onDocumentLoadSuccess}
+                        >
+                        {renderPages()}
+                    </Document>
+                </div>
+            ) : (
+                <>Loading File...</>
+            )}
+            
+        </>
+    )
+
+}
 
 export default Chat;

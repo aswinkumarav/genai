@@ -9,12 +9,17 @@ from base64 import b64encode
 from flask import Flask, Response, request, jsonify, send_from_directory
 from dotenv import load_dotenv
 
+# Import necessary libraries for blob
+from azure.storage.blob import generate_blob_sas, BlobSasPermissions
+from datetime import datetime, timedelta
+
 from backend.auth.auth_utils import get_authenticated_user_details
 from backend.history.cosmosdbservice import CosmosConversationClient
 
 load_dotenv()
 
 app = Flask(__name__, static_folder="static")
+
 
 # Static Files
 @app.route("/")
@@ -34,6 +39,11 @@ DEBUG = os.environ.get("DEBUG", "false")
 DEBUG_LOGGING = DEBUG.lower() == "true"
 if DEBUG_LOGGING:
     logging.basicConfig(level=logging.DEBUG)
+
+# Azure Storage Details
+AZURE_STORAGE_ACCOUNT_NAME = os.environ.get("AZURE_STORAGE_ACCOUNT_NAME")
+AZURE_STORAGE_ACCOUNT_KEY = os.environ.get("AZURE_STORAGE_ACCOUNT_KEY")
+AZURE_STORAGE_CONTAINER_NAME = os.environ.get("AZURE_STORAGE_CONTAINER_NAME")
 
 # On Your Data Settings
 DATASOURCE_TYPE = os.environ.get("DATASOURCE_TYPE", "AzureCognitiveSearch")
@@ -57,6 +67,7 @@ AZURE_SEARCH_VECTOR_COLUMNS = os.environ.get("AZURE_SEARCH_VECTOR_COLUMNS")
 AZURE_SEARCH_QUERY_TYPE = os.environ.get("AZURE_SEARCH_QUERY_TYPE")
 AZURE_SEARCH_PERMITTED_GROUPS_COLUMN = os.environ.get("AZURE_SEARCH_PERMITTED_GROUPS_COLUMN")
 AZURE_SEARCH_STRICTNESS = os.environ.get("AZURE_SEARCH_STRICTNESS", SEARCH_STRICTNESS)
+AZURE_SEARCH_API = os.environ.get("AZURE_SEARCH_API", "2023-11-01")
 
 # AOAI Integration Settings
 AZURE_OPENAI_RESOURCE = os.environ.get("AZURE_OPENAI_RESOURCE")
@@ -116,6 +127,19 @@ ELASTICSEARCH_EMBEDDING_MODEL_ID = os.environ.get("ELASTICSEARCH_EMBEDDING_MODEL
 # Frontend Settings via Environment Variables
 AUTH_ENABLED = os.environ.get("AUTH_ENABLED", "true").lower()
 frontend_settings = { "auth_enabled": AUTH_ENABLED }
+
+# Function to generate a SAS token for a blob
+def generate_sas_for_blob(blob_name):
+    sas_token = generate_blob_sas(
+        account_name=AZURE_STORAGE_ACCOUNT_NAME,
+        account_key=AZURE_STORAGE_ACCOUNT_KEY,
+        container_name=AZURE_STORAGE_CONTAINER_NAME,
+        blob_name=blob_name,
+        permission=BlobSasPermissions(read=True),
+        expiry=datetime.utcnow() + timedelta(minutes=10)  # Token valid for 10 minutes
+    )
+    return f"https://{AZURE_STORAGE_ACCOUNT_NAME}.blob.core.windows.net/{AZURE_STORAGE_CONTAINER_NAME}/{blob_name}?{sas_token}"
+
 
 
 # Initialize a CosmosDB client with AAD auth and containers for Chat History
@@ -580,6 +604,78 @@ def conversation_without_data(request_body):
         return jsonify(response_obj), 200
     else:
         return Response(stream_without_data(response, history_metadata), mimetype='text/event-stream')
+
+# Blob SAS URL
+@app.route("/get_pdf_sas_url", methods=["POST"])
+def get_pdf_sas_url():
+    data = request.json
+    blob_name = data.get("blob_name")
+    if blob_name and blob_name.endswith(".pdf"):
+        try:
+            sas_url = generate_sas_for_blob(blob_name)
+            return jsonify({"sas_url": sas_url})
+        except Exception as e:
+            logging.exception("Error generating SAS URL", e)
+            return jsonify({"error": str(e)}), 500
+    else:
+        return jsonify({"error": "Invalid blob name or not a PDF file"}), 400
+
+@app.route("/get_folder_list", methods=["GET"])
+def get_folder_list():
+    fullPathsList=list()
+    fullPathsSet=set()
+    firstLevelPathsDict=dict()
+    if AZURE_SEARCH_SERVICE and AZURE_SEARCH_INDEX and AZURE_SEARCH_KEY:
+        try:
+            url = f"https://{AZURE_SEARCH_SERVICE}.search.windows.net/indexes/{AZURE_SEARCH_INDEX}/docs/search?api-version={AZURE_SEARCH_API}"
+            Headers = {'Content-Type': 'application/json',
+                    'api-key': AZURE_SEARCH_KEY
+                    }
+            body = {'search': '',
+                    'select': 'id,FullPath',
+                    'skip': 0,
+                    "count":"true",
+                    "top":50000
+                }
+            res = requests.post(url, headers=Headers, json=body)
+            response = res.json()
+            fullPathsList.extend(response['value'])
+            print(fullPathsList)
+            while '@odata.nextLink' in response:
+                url = response['@odata.nextLink']
+                body['skip'] = len(fullPathsList)
+                res = requests.post(url, headers=Headers, json=body)
+                response = res.json()
+                fullPathsList.extend(response['value'])
+            for i in fullPathsList:
+                fullPathsSet.add(i['FullPath'])
+            for i in fullPathsSet:
+                folderList = i.split('/')
+                tempList=[]
+                for k in range(1,len(folderList)): 
+                    if k>2 or k==len(folderList)-1:
+                        break
+                    else:
+                        tempList.append(folderList[k])
+                if tempList:
+                    key=tempList[0]
+                    if len(tempList)==1:
+                        value=set([])
+                    else:
+                        value=set([tempList[1]])
+                    if key in firstLevelPathsDict:
+                        firstLevelPathsDict[key].update(value)
+                    else:
+                        firstLevelPathsDict[key]=value
+            for val in firstLevelPathsDict:
+                firstLevelPathsDict[val] = list(firstLevelPathsDict[val])
+            return jsonify(firstLevelPathsDict)
+        except Exception as e:
+            logging.exception("Error generating folder list", e)
+            return jsonify({"error": str(e)}), 500
+
+    else:
+        return jsonify({"error": "Search Service or Search Index does not exist"}), 404
 
 
 @app.route("/conversation", methods=["GET", "POST"])

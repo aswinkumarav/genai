@@ -123,3 +123,26 @@
     align-items: center;
     color: #242424;
 }
+
+.infoIcon {
+    margin: 4px 5px;
+    cursor: pointer;
+}
+
+.popoverContainer {
+    background: #f3f3f3;
+    padding: 0px 5px 5px 10px;
+    border-radius: 5px;
+    max-height: 21rem;
+    overflow-y: scroll;
+    width: 30%;
+    min-width: 30%;
+    z-index: 9999 !important;
+}
+
+.folderListClose {
+    right: 7px;
+    position: absolute;
+    cursor: pointer;
+    margin-top: 5px;
+}

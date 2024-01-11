@@ -309,3 +309,41 @@ export const frontendSettings = async (): Promise<Response | null> => {
 
     return response
 }
+
+export const getFolderInfo = async (): Promise<Response | null> => {
+    const response = await fetch("/get_folder_list", {
+        method: "GET",
+    }).then((res) => {
+        return res.json()
+    }).catch((err) => {
+        console.error("There was an issue fetching your data.");
+        return null
+    })
+
+    return response
+}
+
+export const getBlobUrl = async (filepath: string): Promise<Response | null> => {
+    const response = await fetch("/get_pdf_sas_url", {
+        method: "POST",
+        body: JSON.stringify({
+            blob_name: filepath
+        }),
+        headers: {
+            "Content-Type": "application/json"
+        },
+    })
+    .then((res) => {
+        return res.json()
+    })
+    .catch((err) => {
+        console.error("There was an issue fetching your data.");
+        let errRes: Response = {
+            ...new Response,
+            ok: false,
+            status: 500,
+        }
+        return errRes;
+    })
+    return response;
+}

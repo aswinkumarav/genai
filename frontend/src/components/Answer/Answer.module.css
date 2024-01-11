@@ -68,11 +68,18 @@
     align-items: center;
     padding: 4px 6px;
     gap: 4px;
-    border: 1px solid #D1D1D1;
+    margin-right: 7px;
     border-radius: 4px;
 }
 
-.citationContainer:hover {
+.fileUrl {
+    cursor: pointer;
+    color: black;
+    height: 13px;
+    margin-left: 5px;
+}
+
+.citationLink:hover {
     text-decoration: underline;
     cursor: pointer;
 }
@@ -98,6 +105,7 @@
     text-align: center;
     color: #424242;
     cursor: pointer;
+    margin-right: 7px;
 }
 
 .citation:hover {
@@ -168,4 +176,12 @@
 sup {
     font-size: 10px;
     line-height: 10px;
+}
+
+table {
+    border-collapse: collapse !important;
+}
+
+td, th {
+    border: 1px solid #dddddd !important;
 }
