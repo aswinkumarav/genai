@@ -325,3 +325,9 @@ a {
     text-decoration: underline;
     cursor: pointer;
 }
+
+.infoIcon {
+    margin-top: 20px;
+    margin-left: 6px;
+    color: #7b7b7b;
+}

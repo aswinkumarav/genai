@@ -144,5 +144,37 @@
     right: 7px;
     position: absolute;
     cursor: pointer;
-    margin-top: 5px;
+    /* margin-top: 5px; */
+}
+
+.protectBtn {
+    background: transparent !important;
+    margin-left: 0px !important;
+    border: 1px solid #d3d3d3;
+    border-radius: 4px;
+    cursor: pointer;
+    height: 32px;
+}
+
+.protectBtn:hover {
+    background: #f0f0f0 !important;
+}
+
+.protected {
+    display: flex !important;
+    margin-top: 4px 4px;
+    line-height: 20px;
+    display: block;
+    font-weight: 500;
+    font-size: 14px;
+    color: rgb(0, 0, 0);
+}
+
+.falink {
+    margin: 5px 10px 0 0;
+    cursor: pointer;
+}
+
+.customParentHeader {
+    background: #550569 !important;
 }

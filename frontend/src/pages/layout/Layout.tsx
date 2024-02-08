@@ -1,8 +1,8 @@
-import { Outlet, Link } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 import styles from "./Layout.module.css";
 import logo from "../../assets/logo_light.jpg";
-import { CopyRegular, ShareRegular } from "@fluentui/react-icons";
-import { CommandBarButton, Dialog, Stack, TextField, ICommandBarStyles, IButtonStyles, DefaultButton  } from "@fluentui/react";
+import { CopyRegular } from "@fluentui/react-icons";
+import { Dialog, Stack, TextField, ICommandBarStyles, IButtonStyles } from "@fluentui/react";
 import { useContext, useEffect, useState, useRef } from "react";
 import { HistoryButton, ShareButton } from "../../components/common/Button";
 import { AppStateContext } from "../../state/AppProvider";
@@ -12,7 +12,11 @@ import Overlay from 'react-bootstrap/Overlay';
 import Popover from 'react-bootstrap/Popover';
 import { IoCloseOutline } from "react-icons/io5";
 import { FaRegFolder } from "react-icons/fa6";
-import { CiFileOn } from "react-icons/ci";
+import { CiFolderOn } from "react-icons/ci";
+import { AiOutlineFileProtect } from "react-icons/ai";
+import { FiLink } from "react-icons/fi";
+import { Dropdown } from 'react-bootstrap';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const shareButtonStyles: ICommandBarStyles & IButtonStyles = {
     root: {
@@ -49,6 +53,7 @@ const Layout = () => {
     const [showFolderList, setShowFolderList] = useState<boolean>(false);
     const ref = useRef(null);
     const [target, setTarget] = useState(null);
+    const [showLink, setShowLink] = useState(false);
 
     const handleShareClick = () => {
         setIsSharePanelOpen(true);
@@ -79,12 +84,14 @@ const Layout = () => {
         })
     }
 
-    intFolderInfo();
-
     const handleClick = (event: any) => {
         setShowFolderList(!showFolderList);
         setTarget(event.target);
       };
+
+    const handleShowLink = () => {
+        setShowLink(!showLink)
+    }
 
     useEffect(() => {
         if (copyClicked) {
@@ -92,6 +99,7 @@ const Layout = () => {
         }
     }, [copyClicked]);
 
+    // useEffect(() => { intFolderInfo() }, []);
     useEffect(() => {}, [appStateContext?.state.isCosmosDBAvailable.status]);
 
     return (
@@ -102,65 +110,87 @@ const Layout = () => {
                     // className={styles.headerContainer}
                     >
                         <Stack horizontal verticalAlign="center" className={styles.logo}>
-                            <img
-                                src={logo}
-                                className={styles.headerIcon}
-                            />
-                            {/* <Link to="/" className={styles.headerTitleContainer}>
-                                <h1 className={styles.headerTitle}>Nucleus Gen AI</h1>
-                            </Link> */}
+                            <Link to="/">
+                                <img
+                                    src={logo}
+                                    className={styles.headerIcon}
+                                />
+                            </Link>
                         </Stack>
                         <Stack horizontal tokens={{ childrenGap: 4 }}>
-                            <span ref={ref} style={{margin: '4px 3px'}}>
-                                <span onClick={handleClick} style={{cursor: 'pointer'}}>
-                                    <img
-                                        src={info}
-                                        alt="user"
-                                        id="user-icon"
-                                        height={23}
-                                        width={23}
-                                    />
-                                </span>
-                                    <Overlay placement="bottom" container={ref} rootClose={true} show={showFolderList} target={target}>
-                                        <Popover id="popover-contained" className={styles.popoverContainer}>
-                                            <Popover.Header as="h3" style={{
-                                                borderBottom: '1.5px solid #b4b4b4',
-                                                paddingBottom: '8px',
-                                                marginTop: '10px'
-                                                }}>Folder List
-                                                <span onClick={() => {setShowFolderList(false)}} className={styles.folderListClose}><IoCloseOutline /></span>
-                                                </Popover.Header>
-                                                
-                                            <Popover.Body>
-                                                { folderKey && folderKey.length ? (
-                                                    folderKey.map((key: string) => (
-                                                        <>
-                                                            <div style={{marginTop: '5px'}}>
-                                                                <div style={{display: 'flex', fontWeight: '500'}}>
-                                                                    <span style={{marginTop: '2px'}}><FaRegFolder size={17}/></span>
-                                                                    <span style={{fontSize: '15px', marginLeft: '7px'}}>{key}</span>
-                                                                </div>
-                                                                {folderList[key].map((list: string) => (
-                                                                    <div style={{display: 'flex', marginLeft: '25px'}}>
-                                                                        <span style={{marginTop: '2px'}}><FaRegFolder size={18}/></span>
-                                                                        <span style={{fontSize: '15px', marginLeft: '5px'}}>{list}</span>
-                                                                    </div>
-                                                                ))}
-                                                            </div>
-                                                        </>
-                                                    ))
-                                                    ) : (
-                                                        <>Loading folder list...</>
-                                                    )
-                                                }
-                                            </Popover.Body>
-                                        </Popover>
-                                    </Overlay>
+                        <Dropdown show={showLink ? true : false} style={{marginTop: '2px'}}>
+                            <span className={styles.falink} onClick={() => handleShowLink()}>
+                                <FiLink size={'22px'}/>
                             </span>
+
+                            <Dropdown.Menu show={showLink} style={{top: '35px'}}>
+                                <Dropdown.Item target="_blank" href="https://oai.azure.com/portal/5d7820a3bbcd4eada713d4b1a80b723e/chat?tenantid=74b72ba8-5684-402c-98da-e38799398d7d">Studio</Dropdown.Item>
+                            </Dropdown.Menu>
+                        </Dropdown>
+                        { folderKey && folderKey.length && folderList ? (
+                                <span ref={ref} style={{margin: '4px 3px'}}>
+                                    <span onClick={handleClick} style={{cursor: 'pointer'}}>
+                                        <img
+                                            src={info}
+                                            alt="user"
+                                            id="user-icon"
+                                            height={23}
+                                            width={23}
+                                        />
+                                    </span>
+                                        <Overlay placement="bottom" container={ref} rootClose={true} show={showFolderList} target={target}>
+                                            <Popover id="popover-contained" className={styles.popoverContainer}>
+                                                <Popover.Header as="h3" style={{
+                                                    borderBottom: '1.5px solid #b4b4b4',
+                                                    paddingBottom: '8px',
+                                                    marginTop: '10px'
+                                                    }}>Folder List
+                                                    <span onClick={() => {setShowFolderList(false)}} className={styles.folderListClose}><IoCloseOutline /></span>
+                                                    </Popover.Header>
+                                                    
+                                                <Popover.Body>
+                                                    { folderKey && folderKey.length ? (
+                                                        folderKey.map((key: string) => (
+                                                            <>
+                                                                <div style={{marginTop: '5px'}}>
+                                                                    <div style={{display: 'flex', fontWeight: '500'}}>
+                                                                        <span style={{marginTop: '2px'}}><FaRegFolder size={17}/></span>
+                                                                        <span style={{fontSize: '15px', marginLeft: '7px'}}>{key}</span>
+                                                                    </div>
+                                                                    {folderList[key].map((list: string) => (
+                                                                        <div style={{display: 'flex', marginLeft: '25px'}}>
+                                                                            <span style={{marginTop: '2px'}}><CiFolderOn size={18}/></span>
+                                                                            <span style={{fontSize: '15px', marginLeft: '5px'}}>{list}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </>
+                                                        ))
+                                                        ) : (
+                                                            <>Loading folder list...</>
+                                                        )
+                                                    }
+                                                </Popover.Body>
+                                            </Popover>
+                                        </Overlay>
+                                </span> ) : (<></>) }
                                 {(appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) && 
                                     <HistoryButton onClick={handleHistoryClick} text={appStateContext?.state?.isChatHistoryOpen ? "Hide chat history" : "Show chat history"}/>    
                                 }
                                 <ShareButton onClick={handleShareClick} />
+                                <Link style={{marginLeft: '0px'}} to="https://web.yammer.com/main/groups/eyJfdHlwZSI6Ikdyb3VwIiwiaWQiOiIxNzU5NDE3MTM5MjAifQ" target="_blank">
+                                    <button className={styles.protectBtn}>
+                                        <span className={styles.protected}>
+                                            <span>Help Forum</span>
+                                        </span>
+                                    </button>
+                                </Link>
+                                <button className={styles.protectBtn} style={{marginRight: '10px'}}>
+                                    <span className={styles.protected}>
+                                        <span style={{marginTop: '-1px'}}><AiOutlineFileProtect/></span>
+                                        <span style={{marginLeft: '5px'}}>Protected</span>
+                                    </span>
+                                </button>
                         </Stack>
 
                     </Stack>

@@ -12,6 +12,7 @@ import styles from "./Chat.module.css";
 import Nucleus from "../../assets/nucleus.png";
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import { GrStatusInfo } from "react-icons/gr";
 
 import {
     ChatMessage,
@@ -594,7 +595,10 @@ const Chat = () => {
                                     aria-hidden="true"
                                 />
                                 <h1 className={styles.chatEmptyStateTitle}>Start chatting</h1>
-                                <h2 className={styles.chatEmptyStateSubtitle}>This chatbot is configured to answer your questions</h2>
+                                <span style={{display: 'flex'}}>
+                                    <h2 className={styles.chatEmptyStateSubtitle}>This chatbot is configured to answer your questions for Manufacturing Engineering BOS documents detailed in the information section</h2>
+                                    <span className={styles.infoIcon}><GrStatusInfo /></span>
+                                </span>
                             </Stack>
                         ) : (
                             <div className={styles.chatMessageStream} style={{ marginBottom: isLoading ? "40px" : "0px"}} role="log">

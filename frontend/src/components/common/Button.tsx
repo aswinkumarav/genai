@@ -11,7 +11,6 @@ export const ShareButton: React.FC<ShareButtonProps> = ({onClick}) => {
           height: 32,
           borderRadius: 4,
           padding: '5px 12px',
-          marginRight: '20px',
           border: `1px solid #D1D1D1`,
         },
         rootHovered: {
